@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<fragment
+<!--<fragment
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/fragment"
     android:name="com.example.caro.appapi.MainActivityFragment"
     tools:layout="@layout/fragment_main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent" />-->
 
 
 <!--
@@ -35,3 +35,45 @@
         android:layout_height="match_parent"
         android:freezesText="true"/>
 </LinearLayout>-->
+
+
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical">
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+        <ListView
+            android:id="@android:id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </RelativeLayout>
+<!-- Name Label -->
+<TextView
+    android:id="@+id/name"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="2dip"
+    android:paddingTop="6dip"
+    android:text="Name"
+    android:textSize="16sp"
+    android:textStyle="bold" />
+<!-- Email label -->
+<TextView
+    android:id="@+id/email"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="2dip" />
+<!-- Mobile number label -->
+<TextView
+    android:id="@+id/mobile"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="left"
+    android:text="Mobile: " />
+</LinearLayout>

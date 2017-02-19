@@ -1,114 +1,142 @@
 package com.example.caro.appapi;
 
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.app.ListActivity;
+import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
+import android.widget.ListAdapter;
+import android.widget.SimpleAdapter;
 
-/**
- * Sample Activity demonstrating how to connect to the network and fetch raw
- * HTML. It uses a Fragment that encapsulates the network operations on an AsyncTask.
- *
- * This sample uses a TextView to display output.
- */
-public class MainActivity extends FragmentActivity implements DownloadCallback {
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-    // Reference to the TextView showing fetched data, so we can clear it with a button
-    // as necessary.
-    private TextView mDataText;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-    // Keep a reference to the NetworkFragment which owns the AsyncTask object
-    // that is used to execute network ops.
-    private NetworkFragment mNetworkFragment;
+public class MainActivity extends ListActivity {
 
-    // Boolean telling us whether a download is in progress, so we don't trigger overlapping
-    // downloads with consecutive button clicks.
-    private boolean mDownloading = false;
+    // URL to get contacts JSON
+    private static String url = "http://raw.githubusercontent.com/BilCode/AndroidJSONParsing/master/index.html";
+
+    // JSON Node names
+    private static final String TAG_STUDENT_INFO = "studentsinfo";
+    private static final String TAG_ID = "id";
+    private static final String TAG_STUDENT_NAME = "sname";
+    private static final String TAG_EMAIL = "semail";
+    private static final String TAG_ADDRESS = "address";
+    private static final String TAG_STUDENT_GENDER = "gender";
+    private static final String TAG_STUDENT_PHONE = "sphone";
+    private static final String TAG_STUDENT_PHONE_MOBILE = "mobile";
+    private static final String TAG_STUDENT_PHONE_HOME = "home";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mDataText = (TextView) findViewById(R.id.data_text);
-        mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), "http://dev05.carolinivens.de/htdocs/Liste");
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+// Calling async task to get json
+        new GetStudents().execute();
     }
+    /**
+     * Async task class to get json by making HTTP call
+     */
+    private class GetStudents extends AsyncTask<String, String, String> {
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            // When the user clicks FETCH, fetch the first 500 characters of
-            // raw HTML from www.google.com.
-            case R.id.fetch_action:
-                startDownload();
-                return true;
-            // Clear the text and cancel download.
-            case R.id.clear_action:
-                finishDownloading();
-                mDataText.setText("");
-                return true;
+        // Hashmap for ListView
+        ArrayList<HashMap<String, String>> studentList;
+        ProgressDialog proDialog;
+
+        @Override
+        protected String doInBackground(String... params) {
+            // Creating service handler class instance
+            WebRequest webreq = new WebRequest();
+
+// Making a request to url and getting response
+            String jsonStr = webreq.makeWebServiceCall(url, WebRequest.GETRequest);
+
+            Log.d("Response: ", "> " + jsonStr);
+
+            studentList = ParseJSON(jsonStr);
+            return null;
         }
-        return false;
-    }
 
-    private void startDownload() {
-        if (!mDownloading && mNetworkFragment != null) {
-            // Execute the async download.
-            mNetworkFragment.startDownload();
-            mDownloading = true;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+// Showing progress loading dialog
+            proDialog = new ProgressDialog(MainActivity.this);
+            proDialog.setMessage("Please wait…");
+            proDialog.setCancelable(false);
+            proDialog.show();
         }
-    }
 
-    @Override
-    public void updateFromDownload(String result) {
-        if (result != null) {
-            mDataText.setText(result);
+        @Override
+        protected void onPostExecute(String requestresult) {
+            super.onPostExecute(requestresult);
+// Dismiss the progress dialog
+            if (proDialog.isShowing())
+                proDialog.dismiss();
+/**
+ * Updating received data from JSON into ListView
+ * */
+            ListAdapter adapter = new SimpleAdapter(
+                    MainActivity.this, studentList,
+                    R.layout.list_item, new String[]{TAG_STUDENT_NAME, TAG_EMAIL,
+                    TAG_STUDENT_PHONE_MOBILE}, new int[]{R.id.name,
+                    R.id.email, R.id.mobile});
+
+            setListAdapter(adapter);
+        }
+
+    }
+    private ArrayList<HashMap<String, String>> ParseJSON(String json) {
+        if (json != null) {
+            try {
+// Hashmap for ListView
+                ArrayList<HashMap<String, String>> studentList = new ArrayList<HashMap<String, String>>();
+
+                JSONObject jsonObj = new JSONObject(json);
+
+// Getting JSON Array node
+                JSONArray students = jsonObj.getJSONArray(TAG_STUDENT_INFO);
+
+// looping through All Students
+                for (int i = 0; i < students.length(); i++) {
+                    JSONObject c = students.getJSONObject(i);
+
+                    String id = c.getString(TAG_ID);
+                    String name = c.getString(TAG_STUDENT_NAME);
+                    String email = c.getString(TAG_EMAIL);
+                    String address = c.getString(TAG_ADDRESS);
+                    String gender = c.getString(TAG_STUDENT_GENDER);
+
+// Phone node is JSON Object
+                    JSONObject phone = c.getJSONObject(TAG_STUDENT_PHONE);
+                    String mobile = phone.getString(TAG_STUDENT_PHONE_MOBILE);
+                    String home = phone.getString(TAG_STUDENT_PHONE_HOME);
+
+// tmp hashmap for single student
+                    HashMap<String, String> student = new HashMap<String, String>();
+
+// adding every child node to HashMap key => value
+                    student.put(TAG_ID, id);
+                    student.put(TAG_STUDENT_NAME, name);
+                    student.put(TAG_EMAIL, email);
+                    student.put(TAG_STUDENT_PHONE_MOBILE, mobile);
+
+// adding student to students list
+                    studentList.add(student);
+                }
+                return studentList;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
         } else {
-            mDataText.setText(getString(R.string.connection_error));
-        }
-    }
-
-    @Override
-    public NetworkInfo getActiveNetworkInfo() {
-        ConnectivityManager connectivityManager =
-                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        return networkInfo;
-    }
-
-    @Override
-    public void finishDownloading() {
-        mDownloading = false;
-        if (mNetworkFragment != null) {
-            mNetworkFragment.cancelDownload();
-        }
-    }
-
-    @Override
-    public void onProgressUpdate(int progressCode, int percentComplete) {
-        switch(progressCode) {
-            // You can add UI behavior for progress updates here.
-            case Progress.ERROR:
-                break;
-            case Progress.CONNECT_SUCCESS:
-                break;
-            case Progress.GET_INPUT_STREAM_SUCCESS:
-                break;
-            case Progress.PROCESS_INPUT_STREAM_IN_PROGRESS:
-                mDataText.setText("" + percentComplete + "%");
-                break;
-            case Progress.PROCESS_INPUT_STREAM_SUCCESS:
-                break;
+            Log.e("ServiceHandler", "No data received from HTTP Request");
+            return null;
         }
     }
 }
